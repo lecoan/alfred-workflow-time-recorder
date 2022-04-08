@@ -17,16 +17,17 @@ tell application "Calendar"
 end tell
 '''
 
-def get_time_diff(start):      
+def get_time_diff(start):
         diff = datetime.now() - start
         hours = diff.seconds // (60 * 60)
         minutes = (diff.seconds // 60) % 60
         return hours, minutes
 
+
 def on_start(wf: Workflow3):
     start = wf.cached_data("start", max_age=FOREVER)
     if start == None:
-        if len(wf.args) == 1:
+        if len(wf.args) == 1 or wf.args[1] == "":
             task = wf.cached_data("info") if wf.cached_data("info") else ""
         else:
             task = wf.args[1]
@@ -43,7 +44,9 @@ def on_start(wf: Workflow3):
         item = wf.add_item(
             title=f"You are working on {event_name}",
             subtitle=f"Last {hours} hour(s) and {minutes} minute(s). Do you want to pause it? (CMD to stop)",
-            icon=ICON_CLOCK
+            icon=ICON_CLOCK,
+            valid=True,
+            arg=f"{info}"
         )
         item.add_modifier(
             key="cmd",
@@ -76,14 +79,15 @@ def on_end(wf: Workflow3, pause=False):
         _, stderr = p.communicate(script)
         wf.logger.debug(stderr)
         clear_data(pause)
-        leader = "Puased" if pause else "Stoped" 
+        leader = "Puased" if pause else "Stoped"
         print(f"{leader} current task")
 
-    
+
 def clear_data(pause=False):
     wf.cache_data("start", None)
     if not pause:
         wf.cache_data("info", None)
+
 
 def main(wf: Workflow3):
     option = wf.args[0]
@@ -97,6 +101,7 @@ def main(wf: Workflow3):
     if option == "delete":
         clear_data()
         print("Cleared previous calendar info")
+
 
 if __name__ == "__main__":
     wf = Workflow3()
